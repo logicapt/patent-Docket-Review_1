@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patent Case Docket & Status Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body class="h-full flex flex-col font-sans text-slate-900 antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Header -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <i data-lucide="scale" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-base font-bold tracking-tight text-white leading-tight">Patent Docket Tracker</h1>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-sm">
+                            Source Evidence
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400">PacerMonitor docket matching with CourtListener / RECAP fallback</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2.5">
+                <button id="btn-open-glossary" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 transition">
+                    <i data-lucide="book-open" class="w-3.5 h-3.5 mr-1.5 text-indigo-400"></i>
+                    Legal Glossary (Client Guide)
+                </button>
+                <button id="btn-load-sample" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 mr-1.5 text-indigo-400"></i>
+                    Load 100 Sample Cases
+                </button>
+                <button id="btn-toggle-settings" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+                    <i data-lucide="sliders" class="w-3.5 h-3.5 mr-1.5 text-slate-400"></i>
+                    Settings & API Keys
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Settings Drawer (Collapsible) -->
+        <section id="settings-panel" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 transition-all">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center">
+                    <i data-lucide="cpu" class="w-4 h-4 mr-2 text-purple-600"></i>
+                    Docket Source Settings
+                </h3>
+                <button id="btn-close-settings" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 text-xs">
+                <!-- Gemini API Key -->
+                <div class="space-y-1.5 bg-purple-50/50 p-3.5 rounded-xl border border-purple-100">
+                    <label class="font-bold text-purple-900 flex items-center justify-between">
+                        <span>Gemini connection test</span>
+                        <a href="https://aistudio.google.com/apikey" target="_blank" class="text-purple-600 hover:underline">Get Key &rarr;</a>
+                    </label>
+                    <input type="password" aria-label="Optional Gemini connection test; AI does not verify source data" id="input-gemini-key" placeholder="AIzaSy..." class="w-full px-3 py-2 border border-purple-200 rounded-lg text-xs focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none bg-white">
+                    <div class="flex items-center justify-between pt-1">
+                        <button id="btn-test-gemini" class="text-purple-700 font-semibold hover:underline text-[11px]">Test Gemini Connection</button>
+                        <span id="gemini-status-msg" class="text-[11px] text-slate-500 font-medium"></span>
+                    </div>
+                </div>
+
+                <!-- CourtListener Token -->
+                <div class="space-y-1.5 p-3.5 rounded-xl border border-slate-200 bg-slate-50/40">
+                    <label class="font-semibold text-slate-700 flex items-center justify-between">
+                        <span>CourtListener Token</span>
+                        <a href="https://www.courtlistener.com/profile/api/" target="_blank" class="text-indigo-600 hover:underline">Get Token &rarr;</a>
+                    </label>
+                    <input type="password" id="input-api-token" placeholder="Optional free token" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white">
+                    <p class="text-[11px] text-slate-500">Enables the RECAP fallback. API permissions and archive coverage may vary.</p>
+                </div>
+
+                <!-- IP Proxy Settings -->
+                <div class="space-y-1.5 p-3.5 rounded-xl border border-slate-200 bg-slate-50/40">
+                    <label class="font-semibold text-slate-700 flex items-center justify-between">
+                        <span>IP Proxy (HTTP/SOCKS5)</span>
+                        <button id="btn-test-proxy" class="text-indigo-600 hover:underline font-semibold">Test IP</button>
+                    </label>
+                    <input type="text" id="input-proxy" placeholder="http://ip:port or socks5://..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white">
+                    <p id="proxy-status-msg" class="text-[11px] text-slate-500">Optional proxy for your network connection.</p>
+                </div>
+
+                <!-- PacerMonitor Session Cookie / Mode -->
+                <div class="space-y-1.5 p-3.5 rounded-xl border border-slate-200 bg-slate-50/40">
+                    <label class="font-semibold text-slate-700">PacerMonitor & Mode</label>
+                    <input type="password" id="input-pm-cookie" placeholder="Optional authorized session cookie" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white mb-2">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="chk-demo-mode" class="sr-only peer">
+                        <div class="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                        <span class="ml-2 text-xs font-medium text-slate-700">Demo Simulation Mode (fictional data)</span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <p class="text-xs text-slate-500 mb-4">Live mode requires Case Number, Plaintiff, and Defendant. Include Jurisdiction and an optional PacerMonitor URL column. Snippet dates refer to docket entries; termination dates are shown separately. Demo data is fictional.</p>
+        <!-- Upload & Input Zone -->
+        <section id="upload-section" class="bg-white rounded-2xl border-2 border-dashed border-slate-300 hover:border-indigo-400 p-8 text-center transition cursor-pointer group">
+            <input type="file" id="file-input" class="hidden" accept=".xlsx,.xls,.csv">
+            <div class="max-w-md mx-auto space-y-3">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-50 group-hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition">
+                    <i data-lucide="file-spreadsheet" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-slate-800">
+                        Drop your Excel file here, or <span class="text-indigo-600 group-hover:underline">browse</span>
+                    </p>
+                    <p class="text-xs text-slate-500 mt-1">Supports <span class="font-mono">.xlsx</span>, <span class="font-mono">.xls</span>, and <span class="font-mono">.csv</span> (Auto-detects Case Number, Jurisdiction, Patents, etc.)</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="docket-import-panel" class="bg-white rounded-2xl border border-indigo-200 p-5 space-y-3">
+            <h2 class="text-sm font-bold text-slate-900">Use a docket from your PacerMonitor account</h2>
+            <p class="text-xs text-slate-600">When direct retrieval is blocked, open the case while signed in and load the docket entries you need. Drag <a id="capture-docket-bookmark" class="font-semibold text-indigo-700 underline">Capture PacerMonitor docket</a> to your bookmarks bar, then click that bookmark on the open docket to save an HTML file. You can also save the loaded page as HTML from your browser.</p>
+            <p class="text-xs text-slate-500">The capture saves loaded page content without your cookies or password. Imported data is matched against your spreadsheet; it is not independently verified online.</p>
+            <form id="docket-import-form" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <label class="space-y-1">Case from your spreadsheet
+                    <select id="import-case-id" class="block w-full border border-slate-300 rounded-lg p-2" required><option value="">Load a case spreadsheet first</option></select>
+                </label>
+                <label class="space-y-1">PacerMonitor case URL (optional for captured files)
+                    <input id="import-source-url" type="url" placeholder="https://www.pacermonitor.com/public/case/..." class="block w-full border border-slate-300 rounded-lg p-2">
+                </label>
+                <label class="space-y-1">Saved docket HTML
+                    <input id="docket-html-file" type="file" accept=".html,.htm" class="block w-full" required>
+                </label>
+                <button id="btn-import-docket" class="rounded-lg px-4 py-2 bg-indigo-700 text-white font-semibold" type="submit">Import and match docket</button>
+            </form>
+            <label class="block text-xs text-slate-600"><input id="use-imported-dockets" type="checkbox" checked> Reuse imported snapshots during batch scans. Uncheck to request live sources again.</label>
+            <p id="docket-import-status" role="status" aria-live="polite" class="text-xs text-slate-600"></p>
+            <p class="text-xs text-slate-500">For unattended retrieval, PacerMonitor offers <a href="https://www.pacermonitor.com/pricing" target="_blank" rel="noopener noreferrer" class="underline text-indigo-700">separate API access</a>. A normal website login does not establish API access.</p>
+        </section>
+
+        <!-- Active File Info Banner (Hidden until file loaded) -->
+        <section id="file-info-banner" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span id="active-filename" class="text-sm font-bold text-slate-800">sample_patent_cases.xlsx</span>
+                        <span id="active-case-count" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">100 Cases Loaded</span>
+                    </div>
+                    <div id="detected-columns" class="text-xs text-slate-500 mt-1 flex flex-wrap gap-1.5">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button id="btn-start-scan" class="inline-flex items-center px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-md shadow-indigo-500/20 transition">
+                    <i data-lucide="play" class="w-4 h-4 mr-2 fill-white"></i>
+                    Start Docket Scan
+                </button>
+                <button id="btn-stop-scan" class="hidden inline-flex items-center px-4 py-2.5 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition">
+                    <i data-lucide="square" class="w-4 h-4 mr-1.5 fill-rose-700"></i>
+                    Stop
+                </button>
+            </div>
+        </section>
+
+        <!-- KPI Metrics & Live Progress Tracker -->
+        <section id="metrics-section" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+            <div class="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block">Imported Dockets</span>
+                <span id="stat-imported" class="text-2xl font-black text-slate-900">0</span>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block">Total Cases</span>
+                <span id="stat-total" class="text-2xl font-black text-slate-900">0</span>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block">Processed</span>
+                <span id="stat-processed" class="text-2xl font-black text-indigo-600">0</span>
+            </div>
+            <div class="bg-purple-50/70 rounded-xl border border-purple-200 p-3.5 shadow-sm">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-purple-700 block">Source Matched</span>
+                <span id="stat-gemini-verified" class="text-2xl font-black text-purple-600">0</span>
+            </div>
+            <div class="bg-teal-50/70 rounded-xl border border-teal-200 p-3.5 shadow-sm">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-teal-700 block">Invalidity Contentions</span>
+                <span id="stat-invalidity" class="text-2xl font-black text-teal-600">0</span>
+            </div>
+            <div class="bg-amber-50/70 rounded-xl border border-amber-200 p-3.5 shadow-sm">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-amber-700 block">Settled</span>
+                <span id="stat-settled" class="text-2xl font-black text-amber-600">0</span>
+            </div>
+            <div class="bg-rose-50/70 rounded-xl border border-rose-200 p-3.5 shadow-sm">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-rose-700 block">Dismissed</span>
+                <span id="stat-dismissed" class="text-2xl font-black text-rose-600">0</span>
+            </div>
+        </section>
+
+        <!-- Live Scan Progress Bar -->
+        <div id="progress-container" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-2">
+            <div class="flex items-center justify-between text-xs font-semibold">
+                <span id="progress-status-label" class="text-indigo-600 flex items-center">
+                    <i data-lucide="loader" class="w-3.5 h-3.5 mr-1.5 animate-spin"></i>
+                    Matching case identities and retrieving dated docket entries...
+                </span>
+                <span id="progress-percent" class="text-slate-600 font-mono">0%</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                <div id="progress-bar-fill" class="h-full bg-gradient-to-r from-purple-500 to-indigo-600 transition-all duration-300 rounded-full" style="width: 0%"></div>
+            </div>
+            <p id="progress-case-info" class="text-[11px] text-slate-500 font-mono truncate">Waiting to start...</p>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-1.5 text-xs font-semibold" id="filter-pills">
+                <button data-filter="ALL" class="filter-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white shadow-sm">All Cases</button>
+                <button data-filter="INVALIDITY" class="filter-btn px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 transition">🎯 Invalidity Contentions</button>
+                <button data-filter="AI_VERIFIED" class="filter-btn px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 transition">🤖 Source Matched</button>
+                <button data-filter="SETTLED" class="filter-btn px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">Settled</button>
+                <button data-filter="DISMISSED" class="filter-btn px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">Dismissed</button>
+                <button data-filter="ACTIVE" class="filter-btn px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">Active</button>
+            </div>
+
+            <div class="flex items-center space-x-2.5">
+                <div class="relative w-48 sm:w-64">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                    <input type="text" id="search-input" placeholder="Search case, patent, summary..." class="w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                </div>
+
+                <button id="btn-export-excel" class="inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+                    <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5"></i>
+                    Export Excel
+                </button>
+            </div>
+        </section>
+
+        <!-- Results Table -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto min-h-[350px]">
+                <table class="w-full text-left text-xs text-slate-700 border-collapse">
+                    <thead class="bg-slate-100/80 text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider text-[10px]">
+                        <tr>
+                            <th class="py-3 px-3 w-10 text-center">#</th>
+                            <th class="py-3 px-3">Case Number</th>
+                            <th class="py-3 px-3">Court</th>
+                            <th class="py-3 px-4">Parties</th>
+                            <th class="py-3 px-3">Patents</th>
+                            <th class="py-3 px-3">Observed Status / Verification</th>
+                            <th class="py-3 px-3">Invalidity?</th>
+                            <th class="py-3 px-4">Client Executive Summary</th>
+                            <th class="py-3 px-4">Decisive Docket Snippet</th>
+                            <th class="py-3 px-3 text-right">Docket Source</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-table-body" class="divide-y divide-slate-100 font-normal">
+                        <tr id="empty-row">
+                            <td colspan="10" class="py-16 text-center text-slate-400">
+                                <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
+                                <p class="text-sm font-medium">No cases loaded</p>
+                                <p class="text-xs text-slate-400 mt-1">Upload an Excel file or click "Load 100 Sample Cases" to begin.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Legal Glossary Modal -->
+    <div id="glossary-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-4xl max-h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-200">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+                <div class="flex items-center space-x-2.5">
+                    <i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i>
+                    <div>
+                        <h2 class="text-sm font-bold">Plain-English Legal & Patent Glossary</h2>
+                        <p class="text-xs text-slate-400">Standardized definitions for client calls & docket analysis</p>
+                    </div>
+                </div>
+                <button id="btn-close-glossary" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-4 border-b border-slate-100 bg-slate-50">
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="glossary-search" placeholder="Search terms (e.g. invalidity contentions, summary judgment, stay, claim construction)..." class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white">
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 space-y-6" id="glossary-content"></div>
+
+            <div class="px-6 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+                <span>Based on U.S. Courts Procedural Glossaries & Patent Local Rules (P.L.R. 3-3)</span>
+                <button id="btn-dismiss-glossary" class="px-4 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 font-semibold text-slate-700 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
+        Patent Docket Tracker &bull; PacerMonitor / CourtListener / RECAP &bull; Source-linked docket evidence
+    </footer>
+
+    <!-- App Scripts -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

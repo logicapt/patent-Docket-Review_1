@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patent Docket Review</title>
+  <link rel="stylesheet" href="/assets/review.css">
+  <script src="/assets/review.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/">PD <span>Patent Docket Review</span></a><span class="pill">Gemini reports · No saved docket files</span></header>
+  <main>
+    <section class="intro"><p class="eyebrow">CASE DISCOVERY & SERVICE REVIEW</p><h1>Find the case.<br>Understand the next step.</h1><p>Search court websites, check the case identity, and review the latest 6–7 visible docket entries before preparing a strategy brief.</p></section>
+    <section class="panel" aria-labelledby="search-title">
+      <div class="section-heading"><div><span class="step">01</span><h2 id="search-title">Find a case</h2></div><button id="clear" class="quiet" type="button">Clear session</button></div>
+      <form id="case-form" autocomplete="off">
+        <div class="fields">
+          <label>Case number <input id="case-number" name="case_number" placeholder="1:25-cv-01337" required maxlength="100"></label>
+          <label>Plaintiff <input id="plaintiff" name="plaintiff" placeholder="Company or party name" required maxlength="300"></label>
+          <label>Defendant <input id="defendants" name="defendants" placeholder="Company or party name" required maxlength="300"></label>
+          <label>Court <span class="optional">recommended</span><input id="court" name="court" placeholder="e.g. District of Delaware" maxlength="200"></label>
+        </div>
+        <p class="hint">Federal district case numbers are supported. Use semicolons for multiple parties; names and party roles must match the case page.</p>
+        <fieldset><legend>Search these sources</legend><div id="sources" class="source-options"></div></fieldset>
+        <details class="settings"><summary>Proxy & review settings</summary><div class="settings-grid">
+          <label>IP proxy <span class="optional">optional</span><input id="proxy" type="password" autocomplete="off" placeholder="http://user:password@host:port" maxlength="1000"><span class="hint">HTTP, HTTPS, or unauthenticated SOCKS5. One proxy per session; credentials are not saved.</span></label>
+          <label>Entries to review<select id="entry-limit"><option value="7">Latest 7 visible entries</option><option value="6">Latest 6 visible entries</option></select><span class="hint">At least 6 dated entries are needed for a service recommendation.</span></label>
+          <label>Analysis mode<select id="analysis-mode"><option value="gemini" selected>Gemini litigation report</option><option value="rules">Local rules</option><option id="local-ai-option" value="local_ai" disabled>Local AI + rules (setup required)</option></select><span id="local-ai-status" class="hint" role="status">Checking local AI setup...</span></label>
+        </div></details>
+        <div id="gemini-settings" class="gemini-settings">
+          <label>Gemini API key<input id="gemini-key" type="password" autocomplete="off" spellcheck="false" maxlength="500" placeholder="Enter your Google Gemini API key"><span class="hint">Used for this report request and cleared on submission. Never saved by the app.</span></label>
+          <label>Gemini model<input id="gemini-model" value="gemini-3.5-flash" maxlength="100" pattern="gemini-[a-z0-9][a-z0-9.\-]{0,90}" spellcheck="false"></label>
+          <p class="hint">Review bot reads the selected case and sends extracted docket evidence to Google Gemini to generate your report. Google’s API data handling and charges apply. A blocked case still needs visible page content. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Get a Gemini API key ↗</a></p>
+        </div>
+        <div class="actions"><button id="search" class="primary" type="submit">Search Google</button><a id="open-google" class="button secondary" target="_blank" rel="noopener noreferrer" href="https://www.google.com/">Open Google ↗</a><span class="hint">Select a result, then click its review bot.</span></div>
+      </form>
+      <div id="search-status" class="status" role="status" aria-live="polite"></div>
+      <div id="search-recovery" class="actions"></div>
+      <div id="source-searches" class="source-searches"></div>
+      <div id="candidates" class="candidates"></div>
+      <div class="direct"><label for="case-url">Already have a case link?</label><div class="direct-row"><input id="case-url" type="url" autocomplete="off" placeholder="Paste a supported HTTPS case URL" maxlength="2000"><button id="review-direct" class="secondary" type="button">Review bot →</button></div><p class="hint">Useful when Google cannot be read automatically. Private pages may require a login; this browser does not share your normal browser session. Law360 articles provide context, not docket evidence.</p></div>
+      <details id="paste-panel" class="direct">
+        <summary>Paste page content — no docket file needed</summary>
+        <ol class="hint"><li>Open the actual case in your normal browser and sign in there if required.</li><li>Once the docket is visible, click its page, press Ctrl+A, then Ctrl+C. Include the case caption, number, court, column headings and docket rows.</li><li>Paste below with Ctrl+V, supply the case URL, then analyze. Your browser can include the copied table formatting automatically.</li></ol>
+        <form id="paste-form" autocomplete="off">
+          <label>Source case URL<input id="paste-url" type="url" placeholder="https://.../case/..." required maxlength="2000"></label>
+          <label class="paste-label">Copied page content<textarea id="paste-content" rows="7" placeholder="Paste the visible case page here. Plain text requires tab-separated docket columns." required maxlength="500000" spellcheck="false"></textarea></label>
+          <p id="paste-status" class="hint" role="status">Only the content you paste is read. No clipboard permission, file upload, website password or cookie is needed.</p>
+          <button id="review-paste" class="primary" type="submit">Analyze pasted docket</button>
+        </form>
+        <p class="hint">This checks the identity inside your copy; it does not independently verify the website, authenticity or freshness. Content is processed in memory and cleared from this input when submitted. Your operating system may retain clipboard history. If the docket is not visible in your normal browser, this option cannot retrieve it.</p>
+      </details>
+    </section>
+    <section id="review-section" class="panel" aria-labelledby="review-title" hidden>
+      <div class="section-heading"><div><span class="step">02</span><h2 id="review-title">Docket review</h2></div><span id="review-state" class="pill"></span></div>
+      <div id="review-status" class="status" role="status" aria-live="polite"></div>
+      <div id="review-content"></div>
+    </section>
+    <footer><strong>Temporary processing, visible evidence.</strong><p>Docket text passes through browser and backend memory to produce this review. Gemini mode also sends extracted evidence to Google. The app saves no docket HTML, documents, analysis history, or credentials. Clear the session to remove the displayed results. Browser or operating-system temporary files cannot be ruled out.</p><p>Choose Gemini reports, local rules or optional on-device AI in review settings. Reports and service recommendations are for human review; no document is sent automatically.</p></footer>
+  </main>
+</body>
+</html>

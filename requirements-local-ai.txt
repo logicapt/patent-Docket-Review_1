@@ -1,0 +1,3 @@
+# Optional local inference library. Supply an existing GGUF model separately.
+# Windows source builds require a C/C++ toolchain; see the README installation notes.
+llama-cpp-python>=0.3,<0.4
