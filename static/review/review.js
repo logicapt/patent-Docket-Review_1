@@ -325,3 +325,40 @@ fetch("/api/analysis-config", {cache: "no-store"}).then(response => response.jso
   $("local-ai-option").textContent = result.local_ai.available ? "Local AI + rules" : "Local AI + rules (setup required)";
   $("local-ai-status").textContent = result.local_ai.message;
 }).catch(() => { $("local-ai-status").textContent = "Local AI setup could not be checked. Local rules are available."; });
+
+const searchCSEBtn = $("search-cse");
+if (searchCSEBtn) {
+  searchCSEBtn.addEventListener("click", () => {
+    const data = identity();
+    const terms = [data.case_number, data.plaintiff, data.defendants, data.court].filter(Boolean).map(v => '"' + v.replaceAll('"', ' ') + '"');
+    const selected = sources.filter(s => selectedSources().includes(s.id));
+    if (selected.length) terms.push("(" + selected.map(s => "site:" + s.domain).join(" OR ") + ")");
+    const query = terms.join(" ");
+
+    if (window.google && window.google.search && window.google.search.cse) {
+      const element = google.search.cse.element.getElement("case_search");
+      if (element) {
+        element.execute(query);
+        status("search-status", "Executed search in Google CSE below. Pick a case link to analyze.");
+        $("cse-panel").scrollIntoView({behavior: "smooth", block: "nearest"});
+        return;
+      }
+    }
+    status("search-status", "Google CSE is ready below. Query: " + (query || "Enter case details above"));
+    $("cse-panel").scrollIntoView({behavior: "smooth", block: "nearest"});
+  });
+}
+
+const csePanel = $("cse-panel");
+if (csePanel) {
+  csePanel.addEventListener("click", (e) => {
+    const anchor = e.target.closest("a");
+    if (anchor && anchor.href && anchor.href.startsWith("http")) {
+      const url = anchor.href;
+      $("case-url").value = url;
+      status("search-status", "Captured link from Google CSE: " + url + "\nClick 'Review bot →' to analyze with Camoufox + Crawl4AI.");
+      $("case-url").scrollIntoView({behavior: "smooth", block: "nearest"});
+    }
+  });
+}
+

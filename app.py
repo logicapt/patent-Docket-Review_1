@@ -44,7 +44,7 @@ async def private_responses(request: Request, call_next):
         request._body = bytes(body)
     response = await call_next(request)
     response.headers.update({"Cache-Control": "no-store", "Pragma": "no-cache", "Referrer-Policy": "no-referrer",
-        "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'"})
+        "X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cse.google.com https://www.google.com; style-src 'self' 'unsafe-inline' https://www.google.com https://cse.google.com; img-src 'self' data: https://www.google.com https://cse.google.com https://*.google.com https://*.gstatic.com; connect-src 'self' https://cse.google.com https://www.google.com https://www.googleapis.com; frame-src 'self' https://cse.google.com https://www.google.com; frame-ancestors 'none'; form-action 'self' https://cse.google.com https://www.google.com; base-uri 'none'"})
     return response
 
 
@@ -162,7 +162,10 @@ def analyze(data: AnalyzeRequest):
                     raise ValueError()
             except ValueError:
                 raise BrowserAccessError("redirected", "The site redirected away from the selected source's case page.") from None
-            parsed = parse_source(html, final_url)
+            # Pass XHR/fetch JSON payloads captured during page load to the parser.
+            # These give us raw structured data from sites that use internal API calls
+            # (UniCourt, Ex Parte AI Lab) before it is rendered into HTML.
+            parsed = parse_source(html, final_url, intercepted_json=browser.intercepted_json)
         return review_parsed(data, parsed)
     except BrowserAccessError as exc:
         return {"success": False, "source_url": data.url, **access_failure(exc, "case_page", data.url)}

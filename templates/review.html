@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Patent Docket Review</title>
   <link rel="stylesheet" href="/assets/review.css">
+  <script async src="https://cse.google.com/cse.js?cx=b1dc4b22a0dee4cca"></script>
   <script src="/assets/review.js" defer></script>
 </head>
 <body>
@@ -32,12 +33,19 @@
           <label>Gemini model<input id="gemini-model" value="gemini-3.5-flash" maxlength="100" pattern="gemini-[a-z0-9][a-z0-9.\-]{0,90}" spellcheck="false"></label>
           <p class="hint">Review bot reads the selected case and sends extracted docket evidence to Google Gemini to generate your report. Google’s API data handling and charges apply. A blocked case still needs visible page content. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Get a Gemini API key ↗</a></p>
         </div>
-        <div class="actions"><button id="search" class="primary" type="submit">Search Google</button><a id="open-google" class="button secondary" target="_blank" rel="noopener noreferrer" href="https://www.google.com/">Open Google ↗</a><span class="hint">Select a result, then click its review bot.</span></div>
+        <div class="actions"><button id="search" class="primary" type="submit">Search Google</button><button id="search-cse" class="button secondary" type="button">Search via Google CSE</button><a id="open-google" class="button secondary" target="_blank" rel="noopener noreferrer" href="https://www.google.com/">Open Google ↗</a><span class="hint">Use Google CSE for instant, CAPTCHA-free discovery.</span></div>
       </form>
       <div id="search-status" class="status" role="status" aria-live="polite"></div>
       <div id="search-recovery" class="actions"></div>
       <div id="source-searches" class="source-searches"></div>
       <div id="candidates" class="candidates"></div>
+      <div id="cse-panel" class="cse-panel">
+        <div class="cse-header">
+          <span class="pill cse-pill">Google Programmable Search (CSE)</span>
+          <span class="hint">Official search index (cx: b1dc4b22a0dee4cca). Click a result link to auto-fill the Review bot input below.</span>
+        </div>
+        <div class="gcse-search" data-gname="case_search"></div>
+      </div>
       <div class="direct"><label for="case-url">Already have a case link?</label><div class="direct-row"><input id="case-url" type="url" autocomplete="off" placeholder="Paste a supported HTTPS case URL" maxlength="2000"><button id="review-direct" class="secondary" type="button">Review bot →</button></div><p class="hint">Useful when Google cannot be read automatically. Private pages may require a login; this browser does not share your normal browser session. Law360 articles provide context, not docket evidence.</p></div>
       <details id="paste-panel" class="direct">
         <summary>Paste page content — no docket file needed</summary>

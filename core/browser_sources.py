@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 
 from .evidence import parse_date
 from .pacer_monitor import PacerMonitorClient
+from .crawl4ai_extractor import extract_with_schema, find_json_docket_entries
 
 
 SOURCES = {
@@ -236,15 +237,42 @@ def _courtlistener_entries(soup):
     return entries
 
 
-def parse_source(html, url):
+def parse_source(html, url, intercepted_json=None):
+    """Parse a docket page into a structured dict.
+
+    Extraction priority (highest first):
+      1. XHR/fetch JSON payloads captured by BrowserSession during page load.
+         These are the raw API responses many court sites use internally —
+         no HTML parsing required, highest fidelity.
+      2. Crawl4AI schema-based CSS extraction — fast, no LLM, good for
+         sources with known/stable DOM layouts.
+      3. Original BeautifulSoup table + CourtListener DOM selectors — kept
+         as a reliable fallback and to supply entries missed by the above.
+
+    All three result sets are merged and deduplicated by (entry_number, date, desc).
+    ``intercepted_json`` is the list collected by BrowserSession.intercepted_json;
+    pass None (or omit) when called from the paste-docket path which has no browser.
+    """
     key, url = source_url(url)
     soup = BeautifulSoup(html, "html.parser")
     for node in soup.select("script, style, noscript, form, input, textarea, iframe, object, embed"):
         node.decompose()
     meta = _metadata(soup)
-    entries = _table_entries(soup)
+
+    # --- Tier 1: XHR/fetch JSON captured during browser navigation ----------
+    xhr_entries: list[dict] = []
+    if intercepted_json:
+        xhr_entries = find_json_docket_entries(intercepted_json)
+
+    # --- Tier 2: Crawl4AI CSS schema extraction (offline, on cached HTML) ---
+    schema_entries: list[dict] = []
+    if key not in ("pacermonitor",):  # PacerMonitor has its own dedicated parser.
+        schema_entries = extract_with_schema(html, key)
+
+    # --- Tier 3: Original BeautifulSoup extraction (existing behaviour) ------
+    bs4_entries = _table_entries(soup)
     if key == "courtlistener":
-        entries.extend(_courtlistener_entries(soup))
+        bs4_entries.extend(_courtlistener_entries(soup))
     if key == "pacermonitor":
         parsed = PacerMonitorClient.parse_case_page(str(soup), url)
         for field in ("case_number", "case_name", "court", "plaintiffs", "defendants", "date_terminated", "source_last_updated"):
@@ -252,12 +280,16 @@ def parse_source(html, url):
                 meta[field] = parsed[field]
         # PacerMonitor headings are docket dates; they do not separately establish entered/filed dates.
         for entry in parsed["docket_entries"]:
-            entries.append({**entry, "docket_date": entry["date_filed"], "date_filed": "", "date_entered": ""})
+            bs4_entries.append({**entry, "docket_date": entry["date_filed"], "date_filed": "", "date_entered": ""})
         if meta["source_last_updated"]:
             meta["source_update_label"] = "Docket last updated"
+
+    # Merge all entry sources; XHR data takes precedence by appearing first.
+    all_raw_entries = xhr_entries + schema_entries + bs4_entries
+
     timestamp = datetime.now(timezone.utc).isoformat()
     dated, seen, undated = [], set(), 0
-    for raw in entries:
+    for raw in all_raw_entries:
         filed, entered, displayed = [docket_date(raw.get(field)) for field in ("date_filed", "date_entered", "docket_date")]
         dt = entered or filed or displayed
         desc = raw.get("description", "").strip()
@@ -276,3 +308,4 @@ def parse_source(html, url):
     return {**meta, "source_id": key, "source": SOURCES[key]["name"], "source_url": url,
             "retrieved_at": timestamp, "docket_entries": dated, "undated_entries_excluded": undated,
             "coverage": "Loaded page only. Pagination, hidden entries and source freshness are not verified; these are the latest visible entries, not necessarily the latest court entries."}
+
